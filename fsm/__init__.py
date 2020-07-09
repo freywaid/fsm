@@ -1,4 +1,4 @@
 """
 FSM package
 """
-from .fsm import Table, FSM
+from .fsm import Table, FSM, MissingEvent
