@@ -2,6 +2,7 @@
 Finite State Machine support
 """
 import collections
+import inspect
 
 
 class MissingEvent(KeyError):
@@ -91,6 +92,55 @@ class FSM:
             kwargs.update(ekwargs)
             try:
                 yield self._process_event(event, *args, **kwargs)
+            except:
+                self._events.appendleft((event, ekwargs))
+                self.transition = old_transition
+                raise
+
+
+class AsyncFSM(FSM):
+    """
+    Async Finite State Machine
+
+    Actions may be plain functions or coroutines (``async def``); any
+    awaitable result is awaited on each transition.  ``next`` is an async
+    generator.
+
+    >>> import asyncio
+    >>> table = Table()
+    >>> @table('HELLO', 'event', 'THERE')
+    ... async def foo(*args, **kwargs):
+    ...     return 'foo'
+    >>> @table('THERE', 'event', 'HELLO')
+    ... async def bar(*args, **kwargs):
+    ...     return 'bar'
+    >>> async def run():
+    ...     fsm = AsyncFSM(table, 'HELLO')
+    ...     fsm.push('event')
+    ...     fsm.push('event')
+    ...     return [ (fsm.state, r) async for r in fsm.next() ]
+    >>> asyncio.run(run())
+    [('THERE', 'foo'), ('HELLO', 'bar')]
+    """
+    async def _process_event(self, event, *args, **kwargs):
+        FROM = self.state
+        TO, fn = self.table.get(FROM, event)
+        self.transition = transition = (FROM, event, TO)
+        if not self.testing:
+            r = fn(*args, transition_FSM=transition, **kwargs)
+            if inspect.isawaitable(r):
+                r = await r
+        else:
+            r = None
+        self.state = TO
+        return r
+    async def next(self, *args, **kwargs):
+        while self._events:
+            old_transition = self.transition
+            event, ekwargs = self._events.popleft()
+            kwargs.update(ekwargs)
+            try:
+                yield await self._process_event(event, *args, **kwargs)
             except:
                 self._events.appendleft((event, ekwargs))
                 self.transition = old_transition

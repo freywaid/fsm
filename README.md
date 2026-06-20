@@ -64,3 +64,43 @@ push an event with custom `**kwargs` data which will be merged into the action c
 `**kwargs`.  Finally, every action called will have an `transition_FSM` passed in as kwargs
 as well.
 
+## Async
+
+Use `fsm.AsyncFSM` to drive coroutine actions.  It behaves exactly like `fsm.FSM`,
+except `next` is an async generator that awaits each action, so you process it with
+`async for`.
+
+```
+import asyncio
+import fsm
+
+table = fsm.Table()
+
+@table('STATE1', 'doit', 'STATE2')
+async def action1(*args, **kwargs):
+    pass
+
+@table('STATE2', 'doit', 'STATE1')
+async def action2(*args, **kwargs):
+    pass
+
+async def main():
+    myfsm = fsm.AsyncFSM(table, 'STATE1')
+    myfsm.push('doit')
+    myfsm.push('doit')
+    async for _ in myfsm.next():
+        print(myfsm.state)
+
+asyncio.run(main())
+```
+
+OUTPUT
+```
+STATE2
+STATE1
+```
+
+Actions may be either coroutines or plain functions — `AsyncFSM` awaits any awaitable
+result and uses the rest as-is, so you can freely mix sync and async actions in the same
+table.
+
