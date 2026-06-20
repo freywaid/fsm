@@ -1,0 +1,29 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "simple-fsm"
+version = "0.0.2"
+description = "Pythonic FSM"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.6"
+authors = [
+    { name = "Frey Waid", email = "logophage1@gmail.com" },
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/freywaid/fsm"
+
+[tool.hatch.build.targets.wheel]
+packages = ["fsm"]
+
+[tool.pytest.ini_options]
+addopts = "--doctest-modules"
